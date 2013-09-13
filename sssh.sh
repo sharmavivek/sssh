@@ -11,9 +11,9 @@
 # Merge config
 # Set Prompts - PS1=">"
 
-## COMMANDS
+## cmds
 #   if no option takes host by default 
-# l host (this can be either IP or Hostname from etc or dnsresolv)
+# l host (this can be either IP or hostname from etc or dnsresolv)
 # n nicknames (todo unique nickname checking)
 # i index
 # g global - per user list of entires.
@@ -30,29 +30,33 @@
 # g global -- stored at /home/`$whoami`/.sssh_profile
 # p personal history -- stored at local user /home/user
 
-# Final Command
-# ssh $HOSTNAME -l $USERNAME
-COMMAND=""
-HOSTNAME=""
-USERNAME=""
-PASSWORD=""
+# Final cmd
+# ssh $hostname -l $username
+cmd=""
+hostname=""
+username=""
+password=""
+default_username=""
 
 
-INDEX=""
+index=""
 
-# hidden files
-G_FILENAME=
-P_FILENAME=
+# Configuration files
+readonly g_filename="~/.sssh_profile.txt"
+readonly p_filename="~/.sssh_history.txt"
+personal_size=20
+t_file="temp.$$"
+t_del_file="temp.del.$$"
+t_cache="temp.cas.$$"
 
+# Entry Point.
+main
 
-# Variables for functions
-
-
-function usage()
+function show_usage()
 {
     # If no option takes host by default, as with ssh.
-    echo "	h host (this can be either IP or Hostname from etc or dnsresolv)"
-    echo "	n nicknames (todo unique nickname checking)"
+    echo "	h host (IP or hostname)"
+    echo "	n nicknames"
     echo "	i index"
     echo "	g global table"
     echo "	p popular table"
@@ -61,41 +65,96 @@ function usage()
     echo "	- del an entry"
 }
 
-function Check_Duplicate()
+# done
+function EntryAdd()
 {
-	# This is to check if an entry on the basis of nickname is alredy present in Global file
-	echo "In Check_Duplicate"
 	
-}
-
-function set_Entry_Add()
-{
-	echo "Enter Hostname"
-	read HOSTNAME
-	echo "Enter Username"
-	read USERNAME
-	echo "Nickname"
-	read NICKNAME
+	echo "Enter nickname"
+	read nickname
+	grep nickname $g_filename
+	
+	if ($? eq 0)
+	then 
+		"Entry for this nickname is already present"
+		echo "`grep nickname $g_filename`"
+		echo "Exiting. Kindly retry."
+		exit
+	else
+		#entry_add
+		echo "Enter hostname"
+		read hostname
+		echo "Enter username"
+		read username
+		echo "Enter the password"
+		read -s password
+		echo "@$hostname,~$username,*$password,#$nickname" >> g_filename
+	fi
 
     echo -e "You have entered"
-    echo -e "\tNickname: $NICKNAME\t Hostname: $HOSTNAME\t Username: $USERNAME"
+    echo -e "\tnickname: $nickname\t hostname: $hostname\t username: $username"
 	echo ""
-	# Check on nickname if the Entry is already present
-	Check_Duplicate()
-	if 
-		echo "$NICKNAME,$HOSTNAME,$USERNAME,$PASSWORD" >> $G_FILENAME
-	else 
-		echo "Entry already present"
-		sed -n "${LineNo}p" $G_FILENAME
-	fi 	
 }
 
+# to review
+function get_from_nickname()
+{
+	output=`grep '#$nickname' $g_filename`
+	# Check if only 1 item is returned.
+
+	# Next 3 lines to be deleted on review
+	#hostname=`grep "#$nickname" $g_filename | awk -F "@" '{print $2}' | awk -F "," '{print $1}'`
+	#username=`grep "#$nickname" $g_filename | awk -F "~" '{print $2}' | awk -F "," '{print $1}'`
+	#password=`grep "#$nickname" $g_filename | awk -F "*" '{print $2}' | awk -F "," '{print $1}'`
+	
+	hostname=`echo $output | cut -d'@' -f2 | cut -d',' -f1`
+	username=`echo $output | cut -d'~' -f2 | cut -d',' -f1`
+	password=`echo $output | cut -d'*' -f2 | cut -d',' -f1`
+	
+	run_it
+}
+
+#done
+function index_run_it()
+{
+ 	nickname=`sed -n "${index}p" $p_filename | cut -d',' -f3`
+ 	
+ 	# Run from here
+ 	get_from_nickname
+}
+
+
+#done
 function run_it()
 {
 	# PS1=">"	#to do
 
-	echo "ssh `$USERNAME`@`$HOSTNAME`"
-	spawn ssh -l $USERNAME $HOST
+	# Check the values
+	if test [ -z $hostname]
+	then
+		"Kindly enter hostname or IP"
+		read hostname
+	fi  
+
+	if [ -z $username]	
+	then
+		"Kindly enter username"
+		read username
+	fi  
+
+	if [ -z $password]	
+	then
+		"Kindly enter password"
+		read -s password
+	fi  
+
+	echo "ssh $username@$hostname"
+
+	# Adding to HISTORY file of size last 20.
+	echo "$username,$hostname,$nickname" > t_personal_file
+	tail -n `expr $personal_size-1` p_filename >> t_personal_file
+	mv -f t_personal_file p_filename
+
+	spawn ssh -l $username $HOST
 
 	set timeout 5
 	expect "Are you sure you want to continue connecting (yes/no)?" {
@@ -103,70 +162,88 @@ function run_it()
 
 	set timeout 5
 	expect -nocase "*password:*" {
-	send "$PASSWORD\n" }
+	send "$password\n" }
 }
 
-function set_EntryDelete()
+#done
+function print_history()
 {
-    grep -v "pattern" file >  && mv temp file
-        
+	echo -e "Username\tHostname\tNickname"
+	count=0
+	while read LINE ; do
+		count=count+1
+		hostname=`echo $LINE | cut -d'@' -f2 | cut -d',' -f1`
+		username=`echo $LINE | cut -d'~' -f2 | cut -d',' -f1`
+		password=`echo $LINE | cut -d'*' -f2 | cut -d',' -f1`
+
+		echo -e "$count> $username\t$hostname\t$nickname"
+	done < p_filename
 }
 
+#done
+function EntryDelete()
+{
+    grep -v "$nickname" file > t_del_file  && mv t_del_file g_filename
+}
+
+#done
 # Update is delete and then add on the nickname
-function Entry_Update()
+function EntryUpdate()
 {
-
-}
-
-# Update is delete and then add on the nickname
-function get_Entry_Index()
-{
- 	sed -n "${LineNo}p" $G_FILENAME
-
+	EntryDelete
+	EntryAdd	
 }
 
 
 function get_Options()
 {
-	# Getting the options from the command line
-	while getopts ":al:u:p:i:" opt; do
+	# Getting the options from the cmd line
+	while getopts ":al:u:p:i:n:" opt; 
+	do
 		case $opt in
-		    l)
-				# Set hostname
-		    	HOSTNAME=-$OPTARG
-		    u)
-				# Set username
-			  	USERNAME=-$OPTARG
+			l)
+			# Set hostname
+				hostname=-$OPTARG
+			u)
+			# Set username
+				username=-$OPTARG
 			p)
-				# Set password
-				PASSWORD=-$OPTARG  	
-		    i)
-				#LOOKUP based on p or g 
+			# Set password
+				password=-$OPTARG
+			n)
+			# Set password
+				nickname=-$OPTARG
+				get_from_nickname
+			h)
+			# LOOKUP based on p or g 
+				print_history
+				echo "Input the index"
+				read index
+				index_run_it
+
 			add)
-				#add the entry in only g 	
-		    \?)
-		      echo "Invalid option: -$OPTARG" >&2
-		      echo "The usage"
-		      usage
-		      read 
-		      ;;
+			#add the entry in only g 	
+				\?)
+				echo "Invalid option: -$OPTARG" >&2
+				echo "The usage"
+				show_usage
+				read 
+			;;
 		esac
 	done
-
-	# USERNAME is empty, pick from the defaults, stored in personal list
-
-	# Adding entry into the global file.
-	cd $GLOBAL_PATH
-	echo "$HOSTNAME, $USERNAME, $NICKNAME" >> $G_FILE
-
-	# update Perosnal/history List
-
+	print_history
+	run_it
 }
 
+
 # The main code starts here
+function main()
+{
 
-	echo "in main"
+	echo "in main..."
 	echo ""
+	# get options and set the globals variable for the command
 	get_Options
+	rm -f t_file
 
-
+}
