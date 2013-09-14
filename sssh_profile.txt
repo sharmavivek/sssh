@@ -1,8 +1,0 @@
-# Keeping it simple with csv format
-# hostname,username,nickname
-11.120.227.171,yc19vs1,ns1
-11.120.227.172,yc19vs1,ns2
-11.120.227.173,yc19vs1,ns3
-11.120.227.174,yc19vs1,ns4
-11.120.227.175,yc19vs1,ns5
-11.120.227.176,yc19vs1,ns6
