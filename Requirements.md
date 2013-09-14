@@ -5,15 +5,12 @@ A simple ssh wrapper to connect using some default settings
 
 
 ## Requirements 
- 1. able to ssh using nicknames (not just hostnames)  
- - able to ssh using popular history index no  
- - able to ssh using global database index no  
- - 
+1. able to ssh using nicknames (not just hostnames)
+2. able to ssh using popular history index no *hint: cursor based*
+3. able to ssh using default **username**
+4. able to ssh using default **password**
 
- New Support tools
- Read config automatically from xshell
- Merge config
- Set Prompts - PS1=">"
+ 
 
 ##  cmds 
 -    if no option takes host by default  
@@ -25,14 +22,13 @@ A simple ssh wrapper to connect using some default settings
 -  v verbose  
 -  add an entry  
 
- DEFAULTS
- u username -- a default username shall be used to configure
+## Defaults
+- u username *a default username shall be used to configure*
  
 
- database - a set of flat files.
- host, user, nickname
- g global -- stored at /home/`$whoami`/.sssh_profile
- p personal history -- stored at local user /home/user
-
- Final cmd
- ssh $hostname -l $username
+## Design
+- database *a set of flat files*  
+	- host, user, nickname, password
+- g global *stored at /home/`$whoami`/.sssh_profile*
+- p personal history *stored at /home/`$whoami`/.sssh_history*
+- set encrypted password
